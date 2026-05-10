@@ -173,7 +173,7 @@ function App() {
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="搜索标题、正文、分类或标签"
-              className="min-w-0 flex-1 bg-transparent text-sm text-white outline-none placeholder:text-slate-500"
+              className="min-w-0 flex-1 bg-transparent text-[16px] text-white outline-none placeholder:text-slate-500"
             />
             {query ? (
               <button type="button" className="icon-button small" onClick={() => setQuery("")} aria-label="清除搜索">

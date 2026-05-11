@@ -45,7 +45,6 @@ const createEmptyNote = (body = "") => {
     body,
     category: "计算机",
     tags: [],
-    images: [],
     createdAt: timestamp,
     updatedAt: timestamp
   };
@@ -58,7 +57,6 @@ const sampleNotes = [
     body: "manifest、service worker、移动端图标、Vercel 构建命令都需要在发布前检查。iPhone 添加到主屏幕后要确认启动画面和状态栏颜色。",
     category: "工具",
     tags: ["PWA", "Vercel", "部署"],
-    images: [],
     createdAt: nowIso(),
     updatedAt: nowIso()
   },
@@ -68,7 +66,6 @@ const sampleNotes = [
     body: "上传 AI、GitHub 或网页教程截图后，用 Tesseract.js 识别文字，再编辑成自己的知识卡片。",
     category: "AI",
     tags: ["OCR", "Tesseract", "Codex"],
-    images: [],
     createdAt: nowIso(),
     updatedAt: nowIso()
   }
@@ -280,7 +277,7 @@ function NoteCard({ note, onOpen }) {
 }
 
 function Editor({ note, onBack, onSave, onDelete }) {
-  const [draft, setDraft] = useState({ ...note, tagInput: note.tags.join(", "), images: note.images || [] });
+  const [draft, setDraft] = useState({ ...note, tagInput: note.tags.join(", ") });
 
   const updateDraft = (patch) => setDraft((current) => ({ ...current, ...patch }));
 
@@ -299,18 +296,14 @@ function Editor({ note, onBack, onSave, onDelete }) {
     reader.onload = (e) => {
       const base64 = e.target?.result;
       if (base64) {
+        // 在正文末尾添加图片标记
+        const imageMarkdown = `\n\n![image](${base64})\n\n`;
         updateDraft({
-          images: [...draft.images, base64]
+          body: draft.body + imageMarkdown
         });
       }
     };
     reader.readAsDataURL(file);
-  };
-
-  const removeImage = (index) => {
-    updateDraft({
-      images: draft.images.filter((_, i) => i !== index)
-    });
   };
 
   return (
@@ -351,55 +344,58 @@ function Editor({ note, onBack, onSave, onDelete }) {
             </label>
           </div>
 
-          <textarea
-            value={draft.body}
-            onChange={(event) => updateDraft({ body: event.target.value })}
-            placeholder="写下 Markdown 风格笔记、命令、科研流程或截图 OCR 内容..."
-            className="body-input"
-          />
-
-          {/* 图片上传区域 */}
-          <div className="flex flex-col gap-3">
-            <label className="field-label">
-              添加照片
-              <label className="upload-box">
-                <ImageIcon size={20} />
-                <span>选择照片</span>
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="sr-only"
-                  onChange={handleImageUpload}
-                />
-              </label>
+          <div className="relative">
+            <textarea
+              value={draft.body}
+              onChange={(event) => updateDraft({ body: event.target.value })}
+              placeholder="写下 Markdown 风格笔记、命令、科研流程或截图 OCR 内容...点击下方添加照片按钮可插入图片"
+              className="body-input"
+            />
+            
+            {/* 添加照片按钮 - 浮动在文本框右下角 */}
+            <label className="absolute bottom-3 right-3 flex items-center justify-center w-10 h-10 rounded-full bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/50 cursor-pointer transition-all">
+              <ImageIcon size={18} className="text-emerald-300" />
+              <input
+                type="file"
+                accept="image/*"
+                className="sr-only"
+                onChange={handleImageUpload}
+              />
             </label>
+          </div>
 
-            {/* 显示已上传的图片 */}
-            {draft.images.length > 0 && (
-              <div className="flex flex-col gap-3">
-                <p className="text-xs text-slate-400">已添加 {draft.images.length} 张照片</p>
-                <div className="grid grid-cols-3 gap-2">
-                  {draft.images.map((image, index) => (
+          {/* 图片预览区域 - 显示笔记中的所有图片 */}
+          {draft.body.includes("![image]") && (
+            <div className="mt-4 pt-4 border-t border-white/10">
+              <p className="text-xs text-slate-400 mb-3">笔记中的图片：</p>
+              <div className="flex flex-wrap gap-2">
+                {draft.body.match(/!\[image\]\(data:image[^)]+\)/g)?.map((match, index) => {
+                  const base64 = match.match(/\(([^)]+)\)/)[1];
+                  return (
                     <div key={index} className="relative group">
                       <img
-                        src={image}
+                        src={base64}
                         alt={`笔记图片 ${index + 1}`}
-                        className="w-full h-24 object-cover rounded-12 border border-white/10"
+                        className="h-20 w-20 object-cover rounded-lg border border-white/10"
                       />
                       <button
                         type="button"
-                        onClick={() => removeImage(index)}
-                        className="absolute top-1 right-1 bg-red-500/80 hover:bg-red-600 rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => {
+                          updateDraft({
+                            body: draft.body.replace(match, "")
+                          });
+                        }}
+                        className="absolute top-0 right-0 bg-red-500/80 hover:bg-red-600 rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
                         aria-label="删除图片"
                       >
-                        <X size={14} />
+                        <X size={12} />
                       </button>
                     </div>
-                  ))}
-                </div>
+                  );
+                })}
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </section>
 
         {/* 返回键移到下面 */}

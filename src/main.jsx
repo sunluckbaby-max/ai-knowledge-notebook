@@ -39,7 +39,7 @@ const splitTags = (value) =>
 const createEmptyNote = (body = "") => {
   const timestamp = nowIso();
   return {
-    id: crypto.randomUUID(),
+    id: crypto.randomUUID?.() || `note-${Date.now()}-${Math.random().toString(16).slice(2)}`,
     title: "",
     body,
     category: "计算机",
@@ -82,7 +82,11 @@ function loadNotes() {
 }
 
 function saveNotes(notes) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(notes));
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(notes));
+  } catch {
+    // Local storage may be unavailable in some private browsing modes.
+  }
 }
 
 function App() {

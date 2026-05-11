@@ -11,7 +11,8 @@ import {
   Search,
   Sparkles,
   Trash2,
-  X
+  X,
+  Image as ImageIcon
 } from "lucide-react";
 import { createWorker } from "tesseract.js";
 import "./styles.css";
@@ -44,6 +45,7 @@ const createEmptyNote = (body = "") => {
     body,
     category: "计算机",
     tags: [],
+    images: [],
     createdAt: timestamp,
     updatedAt: timestamp
   };
@@ -56,6 +58,7 @@ const sampleNotes = [
     body: "manifest、service worker、移动端图标、Vercel 构建命令都需要在发布前检查。iPhone 添加到主屏幕后要确认启动画面和状态栏颜色。",
     category: "工具",
     tags: ["PWA", "Vercel", "部署"],
+    images: [],
     createdAt: nowIso(),
     updatedAt: nowIso()
   },
@@ -65,6 +68,7 @@ const sampleNotes = [
     body: "上传 AI、GitHub 或网页教程截图后，用 Tesseract.js 识别文字，再编辑成自己的知识卡片。",
     category: "AI",
     tags: ["OCR", "Tesseract", "Codex"],
+    images: [],
     createdAt: nowIso(),
     updatedAt: nowIso()
   }
@@ -276,7 +280,7 @@ function NoteCard({ note, onOpen }) {
 }
 
 function Editor({ note, onBack, onSave, onDelete }) {
-  const [draft, setDraft] = useState({ ...note, tagInput: note.tags.join(", ") });
+  const [draft, setDraft] = useState({ ...note, tagInput: note.tags.join(", "), images: note.images || [] });
 
   const updateDraft = (patch) => setDraft((current) => ({ ...current, ...patch }));
 
@@ -287,17 +291,31 @@ function Editor({ note, onBack, onSave, onDelete }) {
     });
   };
 
+  const handleImageUpload = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const base64 = e.target?.result;
+      if (base64) {
+        updateDraft({
+          images: [...draft.images, base64]
+        });
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const removeImage = (index) => {
+    updateDraft({
+      images: draft.images.filter((_, i) => i !== index)
+    });
+  };
+
   return (
     <main className="min-h-screen bg-[#08090d] px-4 py-5 text-slate-50">
       <div className="mx-auto flex min-h-[calc(100vh-40px)] w-full max-w-[430px] flex-col gap-4">
-        <header className="flex items-center justify-between">
-          <button type="button" className="ghost-button" onClick={onBack}>
-            <ChevronLeft size={18} />
-            返回
-          </button>
-          <span className="text-xs text-slate-500">创建于 {formatTime(draft.createdAt)}</span>
-        </header>
-
         <section className="editor-panel">
           <input
             value={draft.title}
@@ -339,15 +357,63 @@ function Editor({ note, onBack, onSave, onDelete }) {
             placeholder="写下 Markdown 风格笔记、命令、科研流程或截图 OCR 内容..."
             className="body-input"
           />
+
+          {/* 图片上传区域 */}
+          <div className="flex flex-col gap-3">
+            <label className="field-label">
+              添加照片
+              <label className="upload-box">
+                <ImageIcon size={20} />
+                <span>选择照片</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="sr-only"
+                  onChange={handleImageUpload}
+                />
+              </label>
+            </label>
+
+            {/* 显示已上传的图片 */}
+            {draft.images.length > 0 && (
+              <div className="flex flex-col gap-3">
+                <p className="text-xs text-slate-400">已添加 {draft.images.length} 张照片</p>
+                <div className="grid grid-cols-3 gap-2">
+                  {draft.images.map((image, index) => (
+                    <div key={index} className="relative group">
+                      <img
+                        src={image}
+                        alt={`笔记图片 ${index + 1}`}
+                        className="w-full h-24 object-cover rounded-12 border border-white/10"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeImage(index)}
+                        className="absolute top-1 right-1 bg-red-500/80 hover:bg-red-600 rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                        aria-label="删除图片"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         </section>
 
-        <footer className="grid grid-cols-[1fr_auto] gap-3 pb-3">
+        {/* 返回键移到下面 */}
+        <footer className="grid grid-cols-[1fr_auto_auto] gap-3 pb-3">
           <button type="button" className="save-button" onClick={handleSave}>
             <Check size={19} />
             保存笔记
           </button>
           <button type="button" className="delete-button" onClick={() => onDelete(draft.id)} aria-label="删除笔记">
             <Trash2 size={19} />
+          </button>
+          <button type="button" className="ghost-button" onClick={onBack}>
+            <ChevronLeft size={18} />
+            返回
           </button>
         </footer>
       </div>

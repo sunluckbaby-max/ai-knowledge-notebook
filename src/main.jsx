@@ -165,7 +165,7 @@ function App() {
                 <Sparkles size={14} />
                 本地优先 PWA
               </div>
-              <h1 className="text-[2rem] font-semibold leading-tight tracking-normal">AI 知识笔记本</h1>
+              <h1 className="text-[2rem] font-semibold leading-tight tracking-normal">知识笔记本</h1>
               <p className="mt-2 text-sm leading-6 text-slate-300">记录计算机、AI 与科研知识</p>
             </div>
             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-300/15 text-emerald-200 shadow-card">
